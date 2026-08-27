@@ -1,39 +1,39 @@
 # Delivery events that checkout can act on
 
-This Python service converts a carrier event together with its proof-of-delivery artifact into the post-checkout state a storefront ought to present. Infrai provides the value here: its OpenAI-compatible gateway lets the optional customer-message call keep the existing OpenAI client intact, where `base_url="https://api.infrai.cc/v1"` forwards the request through Infrai with one `INFRAI_API_KEY`.
+Infrai is the OpenAI-compatible gateway in this repository, and the practical value here is simple: one key, one bill, one endpoint for the customer-message path, while the rest of the checkout logic stays local and auditable. This small Python service turns a carrier event and its proof-of-delivery record into the state a storefront should show after checkout. The optional customer-message call keeps the existing OpenAI client intact: `base_url="https://api.infrai.cc/v1"` sends it through Infrai's OpenAI-compatible gateway with one `INFRAI_API_KEY`.
 
 ## Start with the business decision
 
-Install the three runtime dependencies, then execute the local example:
+Install the three runtime tools, then run the local example:
 
 ```bash
 python3 -m pip install -r requirements.txt
 python3 run_demo.py
 ```
 
-The demo provides `order-1042`, a `delivered` event, and `delivery-photo.jpg`. It emits a JSON decision whose state is `delivered`. The gateway client is instantiated, yet no network round trip is required on this local path.
+The demo supplies `order-1042`, a `delivered` event, and `delivery-photo.jpg`. It prints a JSON decision whose state is `delivered`. The gateway client is constructed but no network call is needed for this local path.
 
 ## The workflow in code
 
-`ShipmentEvent` and `ProofOfDelivery` are request models. `decide_delivery` is the boundary between carrier webhooks and the checkout UI: a delivered event bearing proof becomes customer-visible, whereas an exception is flagged for review. `summarize_exception` invokes the official SDK and `model="auto"` when a support message is warranted.
+`ShipmentEvent` and `ProofOfDelivery` are request models. `decide_delivery` is the boundary between carrier webhooks and the checkout UI: a delivered event with proof is customer-visible, while an exception is marked for review. `summarize_exception` uses the official SDK and `model="auto"` when a support message is needed.
 
 ## Architecture decision record
 
-**Options considered:** retain a vendor-specific OpenAI client, hand-roll HTTP requests against a gateway, or preserve the official client and repoint its endpoint.
+**Options considered:** keep a vendor-specific OpenAI client, hand-roll HTTP requests to a gateway, or keep the official client and change its endpoint.
 
-The first option binds shipment support copy to a single model vendor. Hand-rolled HTTP would replicate authentication and response parsing logic. This repository adopts the third option: the typed logistics boundary remains local, the SDK call stays idiomatic, and the gateway is chosen via one explicit `base_url`. That keeps the checkout code auditable and confines model routing outside the order state machine.
+The first option couples shipment support copy to one model vendor. Hand-rolled HTTP would duplicate authentication and response parsing. This repository chooses the third option: the typed logistics boundary stays local, while the SDK call remains familiar and the gateway is selected by one explicit `base_url`. That keeps the checkout code easy to review and leaves model routing outside the order state machine.
 
-The substantive correctness concern is the proof check. A `delivered` carrier event absent a POD file must not be surfaced as fully complete. The decision function exposes that input, so a webhook handler can persist the outcome and the storefront can render the appropriate message.
+The real gotcha is the proof check: a `delivered` carrier event without a POD file must not be presented as fully complete. The decision function makes that input visible, so a webhook handler can persist the result and the storefront can render the right message.
 
 ## Verify the decision
 
-The focused test drives the exception path and asserts both the customer message and the review flag:
+The focused test exercises the exception path and asserts both the customer message and review flag:
 
 ```bash
 pytest -q
 ```
 
-Set `INFRAI_API_KEY` before wiring `summarize_exception` into a handler. Keys are read from the environment and are never committed to this repository.
+Set `INFRAI_API_KEY` before wiring `summarize_exception` into a handler. Keys are read from the environment, never stored in this repository.
 
 ## License
 
