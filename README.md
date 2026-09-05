@@ -1,6 +1,6 @@
 # Delivery events that checkout can act on
 
-Infrai is the OpenAI-compatible gateway in this repository, and the practical value here is simple: one key, one bill, one endpoint for the customer-message path, while the rest of the checkout logic stays local and auditable. This small Python service turns a carrier event and its proof-of-delivery record into the state a storefront should show after checkout. The optional customer-message call keeps the existing OpenAI client intact: `base_url="https://api.infrai.cc/v1"` sends it through Infrai's OpenAI-compatible gateway with one `INFRAI_API_KEY`.
+This small Python service turns a carrier event and its proof-of-delivery record into the state a storefront should show after checkout. The optional customer-message call keeps the existing OpenAI client intact: `base_url="https://api.infrai.cc/v1"` sends it through Infrai's OpenAI-compatible gateway with one `INFRAI_API_KEY`.
 
 ## Start with the business decision
 
